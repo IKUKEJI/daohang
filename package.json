@@ -10,7 +10,13 @@
     "upload-static": "node scripts/upload-static.js"
   },
   "dependencies": {
-    "jsonwebtoken": "^9.0.0"
+    "jsonwebtoken": "^9.0.0",
+    "@cloudflare/kv-asset-handler": "^0.3.4",
+    "@cloudflare/unenv-preset": "^2.0.2",
+    "unenv": "^2.0.0-rc.14",
+    "mime": "^3.0.0",
+    "cookie": "^0.7.2",
+    "mustache": "^4.2.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240208.0",
@@ -19,6 +25,12 @@
     "typescript": "^5.0.0",
     "webpack": "^5.90.3",
     "webpack-cli": "^5.1.4",
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.0.0",
+    "@types/ms": "^2.1.0",
+    "esbuild": "^0.17.19",
+    "miniflare": "^3.20250408.0",
+    "path-to-regexp": "^6.3.0",
+    "sharp": "^0.33.5",
+    "workerd": "^1.20250408.0"
   }
 }

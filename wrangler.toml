@@ -9,11 +9,16 @@ JWT_SECRET = "your-secret-key" # 在生产环境中应该使用更安全的密�
 
 [[kv_namespaces]]
 binding = "NAVIGATION_KV"
-id = "your-preview-kv-namespace-id"
+id = "b097c512e3dc4870a1256e36d2d8d903"
 preview_id = "your-preview-kv-namespace-id"
 
 [site]
 bucket = "./public"
+
+# Pages配置
+[pages]
+pages_build_output_dir = "dist"
+pages_build_command = "npm run build"
 
 # 路由配置
 [[routes]]
