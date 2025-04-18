@@ -19,6 +19,7 @@ bucket = "./public"
 [pages]
 pages_build_output_dir = "dist"
 pages_build_command = "npm run build"
+pages_include_files = ["public/**/*", "admin/**/*", "functions/**/*"]
 
 # 路由配置
 [[routes]]
