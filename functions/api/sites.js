@@ -1,137 +1,255 @@
-import { authenticate, jsonResponse } from '../middleware/auth';
-
-// 使用Cloudflare KV存储网站数据
-const SITES_KEY = 'sites';
+import { verifyToken } from './auth';
 
 // 获取所有网站
 export async function onRequestGet(context) {
-    try {
-        if (!await authenticate(context.request)) {
-            return jsonResponse({ success: false, message: '未授权访问' }, 401);
-        }
-
-        const url = new URL(context.request.url);
-        const id = url.pathname.split('/').pop();
-        
-        // 如果提供了ID，则获取单个网站
-        if (id && id !== 'sites') {
-            const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
-            const site = sites.find(s => s.id === id);
-
-            if (!site) {
-                return jsonResponse({ success: false, message: '网站不存在' }, 404);
-            }
-
-            return jsonResponse({ success: true, data: site });
-        }
-        
-        // 否则获取所有网站
-        const sites = await context.env.KV.get(SITES_KEY) || '[]';
-        return jsonResponse({ success: true, data: JSON.parse(sites) });
-    } catch (error) {
-        return jsonResponse({ success: false, message: '获取网站列表失败' }, 500);
-    }
+    const { env } = context;
+    const sites = await env.NAVIGATION_KV.get('sites', 'json') || [];
+    
+    return new Response(JSON.stringify({
+        success: true,
+        data: sites
+    }), {
+        headers: { 'Content-Type': 'application/json' }
+    });
 }
 
 // 添加新网站
 export async function onRequestPost(context) {
-    try {
-        if (!await authenticate(context.request)) {
-            return jsonResponse({ success: false, message: '未授权访问' }, 401);
-        }
-
-        const { categoryId, name, url, description, icon } = await context.request.json();
-        
-        // 验证必填字段
-        if (!categoryId || !name || !url) {
-            return jsonResponse({ 
-                success: false, 
-                message: '分类ID、网站名称和URL为必填项' 
-            }, 400);
-        }
-
-        const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
-        const newSite = {
-            id: crypto.randomUUID(),
-            categoryId,
-            name,
-            url,
-            description: description || '',
-            icon: icon || 'ri-link',
-            createdAt: new Date().toISOString()
-        };
-
-        sites.push(newSite);
-        await context.env.KV.put(SITES_KEY, JSON.stringify(sites));
-
-        return jsonResponse({ success: true, data: newSite });
-    } catch (error) {
-        return jsonResponse({ success: false, message: '添加网站失败' }, 500);
+    const { request, env } = context;
+    
+    // 验证 token
+    const payload = await verifyToken(request, env);
+    if (!payload) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '未授权访问'
+        }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
+
+    const { name, url, description, categoryId, icon } = await request.json();
+    if (!name || !url || !categoryId) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站名称、URL 和分类不能为空'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 验证 URL 格式
+    try {
+        new URL(url);
+    } catch (error) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '无效的 URL 格式'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 检查分类是否存在
+    const categories = await env.NAVIGATION_KV.get('categories', 'json') || [];
+    if (!categories.some(c => c.id === categoryId)) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '分类不存在'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 获取现有网站
+    const sites = await env.NAVIGATION_KV.get('sites', 'json') || [];
+    
+    // 检查网站名称是否已存在
+    if (sites.some(s => s.name === name)) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站名称已存在'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 创建新网站
+    const newSite = {
+        id: Date.now().toString(),
+        name,
+        url,
+        description: description || '',
+        categoryId,
+        icon: icon || '',
+        createdAt: new Date().toISOString(),
+        createdBy: payload.userId
+    };
+
+    sites.push(newSite);
+    await env.NAVIGATION_KV.put('sites', JSON.stringify(sites));
+
+    return new Response(JSON.stringify({
+        success: true,
+        data: newSite
+    }), {
+        headers: { 'Content-Type': 'application/json' }
+    });
 }
 
 // 更新网站
 export async function onRequestPut(context) {
-    try {
-        if (!await authenticate(context.request)) {
-            return jsonResponse({ success: false, message: '未授权访问' }, 401);
-        }
-
-        const url = new URL(context.request.url);
-        const id = url.pathname.split('/').pop();
-        const updates = await context.request.json();
-
-        // 验证必填字段
-        if (!updates.categoryId || !updates.name || !updates.url) {
-            return jsonResponse({ 
-                success: false, 
-                message: '分类ID、网站名称和URL为必填项' 
-            }, 400);
-        }
-
-        const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
-        const index = sites.findIndex(s => s.id === id);
-
-        if (index === -1) {
-            return jsonResponse({ success: false, message: '网站不存在' }, 404);
-        }
-
-        // 更新网站信息
-        sites[index] = {
-            ...sites[index],
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-
-        await context.env.KV.put(SITES_KEY, JSON.stringify(sites));
-        return jsonResponse({ success: true, data: sites[index] });
-    } catch (error) {
-        return jsonResponse({ success: false, message: '更新网站失败' }, 500);
+    const { request, env } = context;
+    
+    // 验证 token
+    const payload = await verifyToken(request, env);
+    if (!payload) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '未授权访问'
+        }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
+
+    const { id, name, url, description, categoryId, icon } = await request.json();
+    if (!id || !name || !url || !categoryId) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站 ID、名称、URL 和分类不能为空'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 验证 URL 格式
+    try {
+        new URL(url);
+    } catch (error) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '无效的 URL 格式'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 检查分类是否存在
+    const categories = await env.NAVIGATION_KV.get('categories', 'json') || [];
+    if (!categories.some(c => c.id === categoryId)) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '分类不存在'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 获取现有网站
+    const sites = await env.NAVIGATION_KV.get('sites', 'json') || [];
+    const siteIndex = sites.findIndex(s => s.id === id);
+    
+    if (siteIndex === -1) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站不存在'
+        }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 检查新名称是否与其他网站重复
+    if (sites.some(s => s.name === name && s.id !== id)) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站名称已存在'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 更新网站
+    sites[siteIndex] = {
+        ...sites[siteIndex],
+        name,
+        url,
+        description: description || '',
+        categoryId,
+        icon: icon || '',
+        updatedAt: new Date().toISOString(),
+        updatedBy: payload.userId
+    };
+
+    await env.NAVIGATION_KV.put('sites', JSON.stringify(sites));
+
+    return new Response(JSON.stringify({
+        success: true,
+        data: sites[siteIndex]
+    }), {
+        headers: { 'Content-Type': 'application/json' }
+    });
 }
 
 // 删除网站
 export async function onRequestDelete(context) {
-    try {
-        if (!await authenticate(context.request)) {
-            return jsonResponse({ success: false, message: '未授权访问' }, 401);
-        }
-
-        const url = new URL(context.request.url);
-        const id = url.pathname.split('/').pop();
-
-        const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
-        const index = sites.findIndex(s => s.id === id);
-
-        if (index === -1) {
-            return jsonResponse({ success: false, message: '网站不存在' }, 404);
-        }
-
-        sites.splice(index, 1);
-        await context.env.KV.put(SITES_KEY, JSON.stringify(sites));
-
-        return jsonResponse({ success: true });
-    } catch (error) {
-        return jsonResponse({ success: false, message: '删除网站失败' }, 500);
+    const { request, env } = context;
+    
+    // 验证 token
+    const payload = await verifyToken(request, env);
+    if (!payload) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '未授权访问'
+        }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
+
+    const { id } = await request.json();
+    if (!id) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站 ID 不能为空'
+        }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 获取现有网站
+    const sites = await env.NAVIGATION_KV.get('sites', 'json') || [];
+    const siteIndex = sites.findIndex(s => s.id === id);
+    
+    if (siteIndex === -1) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: '网站不存在'
+        }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // 删除网站
+    sites.splice(siteIndex, 1);
+    await env.NAVIGATION_KV.put('sites', JSON.stringify(sites));
+
+    return new Response(JSON.stringify({
+        success: true,
+        message: '网站已删除'
+    }), {
+        headers: { 'Content-Type': 'application/json' }
+    });
 } 

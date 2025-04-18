@@ -1,4 +1,5 @@
-name = "nav-site"
+name = "navigation-website"
+main = "src/worker.js"
 compatibility_date = "2024-01-01"
 
 # Pages配置
@@ -7,9 +8,13 @@ pages_build_output_dir = "."
 functions = "functions"
 
 # KV命名空间配置
-kv_namespaces = [
-  { binding = "KV", id = "dcf23728ee5149b39365cc46619037cc" }
-]
+[vars]
+JWT_SECRET = "your-jwt-secret-key" # 在生产环境中应该使用环境变量
+
+[[kv_namespaces]]
+binding = "NAVIGATION_KV"
+id = "b097c512e3dc4870a1256e36d2d8d903" # 需要替换为实际的 KV 命名空间 ID
+preview_id = "your-preview-kv-namespace-id" # 需要替换为实际的预览 KV 命名空间 ID
 
 [env.production]
 # 生产环境变量

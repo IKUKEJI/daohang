@@ -1,7 +1,5 @@
-const JWT_SECRET = 'your-jwt-secret';
-
 // 验证JWT token
-export async function verifyToken(request) {
+export async function verifyToken(request, env) {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('未提供有效的认证token');
@@ -14,7 +12,7 @@ export async function verifyToken(request) {
         // 验证签名
         const expectedSignature = await hmacSHA256(
             `${header}.${payload}`,
-            JWT_SECRET
+            env.JWT_SECRET
         );
         const actualSignature = atob(signature);
 
@@ -47,9 +45,9 @@ async function hmacSHA256(message, secret) {
 }
 
 // 认证中间件
-export async function authenticate(request) {
+export async function authenticate(request, env) {
     try {
-        await verifyToken(request);
+        await verifyToken(request, env);
         return true;
     } catch (error) {
         return false;
