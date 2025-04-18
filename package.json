@@ -1,0 +1,16 @@
+{
+  "name": "nav-site",
+  "version": "1.0.0",
+  "description": "一个现代风格的导航网站",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler pages dev --kv KV",
+    "deploy": "wrangler pages publish ."
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.28.1"
+  }
+} 
