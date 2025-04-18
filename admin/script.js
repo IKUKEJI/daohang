@@ -1,163 +1,85 @@
-// API 基础 URL
+// API 基础URL
 const API_BASE_URL = '/api';
 
-// 全局状态
-let currentUser = null;
+// 全局变量
 let token = localStorage.getItem('token');
 
 // DOM 元素
+const loginPage = document.getElementById('loginPage');
+const adminPage = document.getElementById('adminPage');
 const loginForm = document.getElementById('loginForm');
-const adminPanel = document.getElementById('adminPanel');
-const categoryForm = document.getElementById('categoryForm');
-const siteForm = document.getElementById('siteForm');
-const importForm = document.getElementById('importForm');
-const accountForm = document.getElementById('accountForm');
-const categoryList = document.getElementById('categoryList');
-const siteList = document.getElementById('siteList');
+const logoutBtn = document.getElementById('logoutBtn');
+const menuItems = document.querySelectorAll('.menu-item');
+const pages = document.querySelectorAll('.page');
 
-// 检查登录状态
-function checkAuth() {
-    if (token) {
-        showAdminPanel();
-        loadData();
-    } else {
-        showLoginForm();
-    }
-}
-
-// 显示登录表单
-function showLoginForm() {
-    loginForm.style.display = 'block';
-    adminPanel.style.display = 'none';
-}
-
-// 显示管理面板
-function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-}
-
-// 加载数据
-async function loadData() {
-    await Promise.all([
-        loadCategories(),
-        loadSites()
-    ]);
-}
-
-// 加载分类列表
-async function loadCategories() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/categories`);
-        const { success, data } = await response.json();
-        
-        if (success) {
-            renderCategories(data);
-        }
-    } catch (error) {
-        console.error('加载分类失败:', error);
-        showError('加载分类失败');
-    }
-}
-
-// 加载网站列表
-async function loadSites() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites`);
-        const { success, data } = await response.json();
-        
-        if (success) {
-            renderSites(data);
-        }
-    } catch (error) {
-        console.error('加载网站失败:', error);
-        showError('加载网站失败');
-    }
-}
-
-// 渲染分类列表
-function renderCategories(categories) {
-    categoryList.innerHTML = categories.map(category => `
-        <div class="list-item">
-            <div class="list-item-content">
-                <h3>${category.name}</h3>
-                <p>${category.description || '无描述'}</p>
-            </div>
-            <div class="list-item-actions">
-                <button onclick="editCategory('${category.id}')" class="btn btn-primary">编辑</button>
-                <button onclick="deleteCategory('${category.id}')" class="btn btn-danger">删除</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// 渲染网站列表
-function renderSites(sites) {
-    siteList.innerHTML = sites.map(site => `
-        <div class="list-item">
-            <div class="list-item-content">
-                <h3>${site.name}</h3>
-                <p>${site.description || '无描述'}</p>
-                <a href="${site.url}" target="_blank">${site.url}</a>
-            </div>
-            <div class="list-item-actions">
-                <button onclick="editSite('${site.id}')" class="btn btn-primary">编辑</button>
-                <button onclick="deleteSite('${site.id}')" class="btn btn-danger">删除</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// 显示错误信息
-function showError(message) {
-    alert(message);
-}
-
-// 显示成功信息
-function showSuccess(message) {
-    alert(message);
-}
-
-// 登录表单提交
+// 登录表单处理
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/auth`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ username, password })
         });
 
-        const { success, data, message } = await response.json();
-        
-        if (success) {
+        if (response.ok) {
+            const data = await response.json();
             token = data.token;
-            currentUser = data.user;
             localStorage.setItem('token', token);
-            showAdminPanel();
-            loadData();
+            showAdminPage();
         } else {
-            showError(message);
+            alert('登录失败：' + await response.text());
         }
     } catch (error) {
-        console.error('登录失败:', error);
-        showError('登录失败');
+        alert('登录失败：' + error.message);
     }
 });
 
-// 分类表单提交
+// 退出登录
+logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    token = null;
+    showLoginPage();
+});
+
+// 显示登录页面
+function showLoginPage() {
+    loginPage.style.display = 'flex';
+    adminPage.style.display = 'none';
+}
+
+// 显示管理页面
+function showAdminPage() {
+    loginPage.style.display = 'none';
+    adminPage.style.display = 'flex';
+    loadCategories();
+    loadSites();
+}
+
+// 菜单切换
+menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+        const targetPage = item.dataset.page;
+        menuItems.forEach(i => i.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(`${targetPage}Page`).classList.add('active');
+    });
+});
+
+// 分类管理
+const categoryForm = document.getElementById('categoryForm');
+const categoriesList = document.getElementById('categoriesList');
+
 categoryForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(categoryForm);
-    const data = {
-        name: formData.get('name'),
-        description: formData.get('description')
-    };
+    const name = document.getElementById('categoryName').value;
+    const description = document.getElementById('categoryDescription').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/categories`, {
@@ -166,36 +88,133 @@ categoryForm.addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ name, description })
         });
 
-        const { success, message } = await response.json();
-        
-        if (success) {
-            showSuccess('分类添加成功');
+        if (response.ok) {
             categoryForm.reset();
             loadCategories();
         } else {
-            showError(message);
+            alert('添加分类失败：' + await response.text());
         }
     } catch (error) {
-        console.error('添加分类失败:', error);
-        showError('添加分类失败');
+        alert('添加分类失败：' + error.message);
     }
 });
 
-// 网站表单提交
+// 加载分类列表
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const categories = await response.json();
+            renderCategories(categories);
+            updateCategorySelects(categories);
+        } else {
+            alert('加载分类失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('加载分类失败：' + error.message);
+    }
+}
+
+// 渲染分类列表
+function renderCategories(categories) {
+    categoriesList.innerHTML = categories.map(category => `
+        <div class="list-item">
+            <div>
+                <h4>${category.name}</h4>
+                <p>${category.description || ''}</p>
+            </div>
+            <div class="list-item-actions">
+                <button class="btn-edit" onclick="editCategory('${category.id}')">
+                    <i class="ri-edit-line"></i>
+                </button>
+                <button class="btn-delete" onclick="deleteCategory('${category.id}')">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 更新分类选择框
+function updateCategorySelects(categories) {
+    const categorySelects = document.querySelectorAll('#siteCategory, #bookmarksCategory');
+    categorySelects.forEach(select => {
+        select.innerHTML = categories.map(category => 
+            `<option value="${category.id}">${category.name}</option>`
+        ).join('');
+    });
+}
+
+// 编辑分类
+async function editCategory(id) {
+    const name = prompt('请输入新的分类名称：');
+    if (!name) return;
+
+    const description = prompt('请输入新的分类描述：');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ id, name, description })
+        });
+
+        if (response.ok) {
+            loadCategories();
+        } else {
+            alert('更新分类失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('更新分类失败：' + error.message);
+    }
+}
+
+// 删除分类
+async function deleteCategory(id) {
+    if (!confirm('确定要删除这个分类吗？')) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ id })
+        });
+
+        if (response.ok) {
+            loadCategories();
+        } else {
+            alert('删除分类失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('删除分类失败：' + error.message);
+    }
+}
+
+// 网站管理
+const siteForm = document.getElementById('siteForm');
+const sitesList = document.getElementById('sitesList');
+
 siteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(siteForm);
-    const data = {
-        name: formData.get('name'),
-        url: formData.get('url'),
-        description: formData.get('description'),
-        categoryId: formData.get('categoryId'),
-        icon: formData.get('icon')
-    };
+    const name = document.getElementById('siteName').value;
+    const url = document.getElementById('siteUrl').value;
+    const description = document.getElementById('siteDescription').value;
+    const categoryId = document.getElementById('siteCategory').value;
+    const icon = document.getElementById('siteIcon').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/sites`, {
@@ -204,34 +223,127 @@ siteForm.addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ name, url, description, categoryId, icon })
         });
 
-        const { success, message } = await response.json();
-        
-        if (success) {
-            showSuccess('网站添加成功');
+        if (response.ok) {
             siteForm.reset();
             loadSites();
         } else {
-            showError(message);
+            alert('添加网站失败：' + await response.text());
         }
     } catch (error) {
-        console.error('添加网站失败:', error);
-        showError('添加网站失败');
+        alert('添加网站失败：' + error.message);
     }
 });
 
-// 导入表单提交
-importForm.addEventListener('submit', async (e) => {
+// 加载网站列表
+async function loadSites() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const sites = await response.json();
+            renderSites(sites);
+        } else {
+            alert('加载网站失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('加载网站失败：' + error.message);
+    }
+}
+
+// 渲染网站列表
+function renderSites(sites) {
+    sitesList.innerHTML = sites.map(site => `
+        <div class="list-item">
+            <div>
+                <h4>${site.name}</h4>
+                <p>${site.description || ''}</p>
+                <a href="${site.url}" target="_blank">${site.url}</a>
+            </div>
+            <div class="list-item-actions">
+                <button class="btn-edit" onclick="editSite('${site.id}')">
+                    <i class="ri-edit-line"></i>
+                </button>
+                <button class="btn-delete" onclick="deleteSite('${site.id}')">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 编辑网站
+async function editSite(id) {
+    const name = prompt('请输入新的网站名称：');
+    if (!name) return;
+
+    const url = prompt('请输入新的网站地址：');
+    if (!url) return;
+
+    const description = prompt('请输入新的网站描述：');
+    const categoryId = document.getElementById('siteCategory').value;
+    const icon = prompt('请输入新的图标URL或类名：');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ id, name, url, description, categoryId, icon })
+        });
+
+        if (response.ok) {
+            loadSites();
+        } else {
+            alert('更新网站失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('更新网站失败：' + error.message);
+    }
+}
+
+// 删除网站
+async function deleteSite(id) {
+    if (!confirm('确定要删除这个网站吗？')) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ id })
+        });
+
+        if (response.ok) {
+            loadSites();
+        } else {
+            alert('删除网站失败：' + await response.text());
+        }
+    } catch (error) {
+        alert('删除网站失败：' + error.message);
+    }
+}
+
+// 书签导入
+const bookmarksForm = document.getElementById('bookmarksForm');
+
+bookmarksForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(importForm);
-    const categoryId = formData.get('categoryId');
-    const file = formData.get('bookmarks');
+    const file = document.getElementById('bookmarksFile').files[0];
+    const categoryId = document.getElementById('bookmarksCategory').value;
 
     if (!file) {
-        showError('请选择书签文件');
+        alert('请选择书签文件');
         return;
     }
 
@@ -240,12 +352,12 @@ importForm.addEventListener('submit', async (e) => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, 'text/html');
         const bookmarks = Array.from(doc.querySelectorAll('a')).map(a => ({
-            name: a.textContent.trim(),
+            name: a.textContent,
             url: a.href,
             description: a.title || ''
         }));
 
-        const response = await fetch(`${API_BASE_URL}/import`, {
+        const response = await fetch(`${API_BASE_URL}/bookmarks`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -254,31 +366,26 @@ importForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ bookmarks, categoryId })
         });
 
-        const { success, data, message } = await response.json();
-        
-        if (success) {
-            showSuccess(`成功导入 ${data.imported} 个书签${data.errors ? `，${data.errors.length} 个错误` : ''}`);
-            importForm.reset();
+        if (response.ok) {
+            bookmarksForm.reset();
+            alert('书签导入成功');
             loadSites();
         } else {
-            showError(message);
+            alert('导入书签失败：' + await response.text());
         }
     } catch (error) {
-        console.error('导入书签失败:', error);
-        showError('导入书签失败');
+        alert('导入书签失败：' + error.message);
     }
 });
 
-// 账户表单提交
+// 账号设置
+const accountForm = document.getElementById('accountForm');
+
 accountForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(accountForm);
-    const data = {
-        username: formData.get('username'),
-        oldPassword: formData.get('oldPassword'),
-        newPassword: formData.get('newPassword')
-    };
+    const username = document.getElementById('newUsername').value;
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/auth`, {
@@ -287,175 +394,24 @@ accountForm.addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ username, oldPassword, newPassword })
         });
 
-        const { success, message } = await response.json();
-        
-        if (success) {
-            showSuccess('账户信息更新成功');
+        if (response.ok) {
             accountForm.reset();
+            alert('账号更新成功，请重新登录');
+            logoutBtn.click();
         } else {
-            showError(message);
+            alert('更新账号失败：' + await response.text());
         }
     } catch (error) {
-        console.error('更新账户信息失败:', error);
-        showError('更新账户信息失败');
+        alert('更新账号失败：' + error.message);
     }
 });
 
-// 编辑分类
-async function editCategory(id) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/categories`);
-        const { success, data } = await response.json();
-        
-        if (success) {
-            const category = data.find(c => c.id === id);
-            if (category) {
-                const name = prompt('请输入新的分类名称:', category.name);
-                const description = prompt('请输入新的分类描述:', category.description);
-                
-                if (name) {
-                    const updateResponse = await fetch(`${API_BASE_URL}/categories`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            id,
-                            name,
-                            description
-                        })
-                    });
-
-                    const { success, message } = await updateResponse.json();
-                    
-                    if (success) {
-                        showSuccess('分类更新成功');
-                        loadCategories();
-                    } else {
-                        showError(message);
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error('编辑分类失败:', error);
-        showError('编辑分类失败');
-    }
-}
-
-// 删除分类
-async function deleteCategory(id) {
-    if (confirm('确定要删除这个分类吗？')) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/categories`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ id })
-            });
-
-            const { success, message } = await response.json();
-            
-            if (success) {
-                showSuccess('分类删除成功');
-                loadCategories();
-            } else {
-                showError(message);
-            }
-        } catch (error) {
-            console.error('删除分类失败:', error);
-            showError('删除分类失败');
-        }
-    }
-}
-
-// 编辑网站
-async function editSite(id) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites`);
-        const { success, data } = await response.json();
-        
-        if (success) {
-            const site = data.find(s => s.id === id);
-            if (site) {
-                const name = prompt('请输入新的网站名称:', site.name);
-                const url = prompt('请输入新的网站 URL:', site.url);
-                const description = prompt('请输入新的网站描述:', site.description);
-                
-                if (name && url) {
-                    const updateResponse = await fetch(`${API_BASE_URL}/sites`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            id,
-                            name,
-                            url,
-                            description,
-                            categoryId: site.categoryId
-                        })
-                    });
-
-                    const { success, message } = await updateResponse.json();
-                    
-                    if (success) {
-                        showSuccess('网站更新成功');
-                        loadSites();
-                    } else {
-                        showError(message);
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error('编辑网站失败:', error);
-        showError('编辑网站失败');
-    }
-}
-
-// 删除网站
-async function deleteSite(id) {
-    if (confirm('确定要删除这个网站吗？')) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/sites`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ id })
-            });
-
-            const { success, message } = await response.json();
-            
-            if (success) {
-                showSuccess('网站删除成功');
-                loadSites();
-            } else {
-                showError(message);
-            }
-        } catch (error) {
-            console.error('删除网站失败:', error);
-            showError('删除网站失败');
-        }
-    }
-}
-
-// 退出登录
-function logout() {
-    token = null;
-    currentUser = null;
-    localStorage.removeItem('token');
-    showLoginForm();
-}
-
-// 初始化
-checkAuth(); 
+// 检查登录状态
+if (token) {
+    showAdminPage();
+} else {
+    showLoginPage();
+} 

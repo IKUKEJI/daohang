@@ -1,25 +1,47 @@
-name = "navigation-website"
-main = "src/worker.js"
-compatibility_date = "2024-01-01"
+name = "navigation-site"
+main = "functions/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
-# Pages配置
-[pages]
-pages_build_output_dir = "."
-functions = "functions"
-
-# KV命名空间配置
 [vars]
-JWT_SECRET = "your-jwt-secret-key" # 在生产环境中应该使用环境变量
+ENVIRONMENT = "production"
+JWT_SECRET = "your-secret-key" # 在生产环境中应该使用更安全的密钥
 
 [[kv_namespaces]]
 binding = "NAVIGATION_KV"
-id = "b097c512e3dc4870a1256e36d2d8d903" # 需要替换为实际的 KV 命名空间 ID
-preview_id = "your-preview-kv-namespace-id" # 需要替换为实际的预览 KV 命名空间 ID
+id = "your-preview-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
 
+[site]
+bucket = "./public"
+
+# 路由配置
+[[routes]]
+pattern = "/admin/*"
+zone_name = "navigation-site.your-domain.com"
+
+# 安全配置
+[security]
+allowed_origins = ["https://navigation-site.your-domain.com"]
+cors = true
+
+# 缓存配置
+[cache]
+browser_ttl = 3600
+edge_ttl = 3600
+
+# 构建配置
+[build]
+command = "npm run build"
+watch_dir = "src"
+
+# 环境配置
 [env.production]
-# 生产环境变量
-vars = { JWT_SECRET = "CHANGE_THIS_TO_A_SECURE_SECRET" }
+name = "navigation-site-prod"
+route = "your-domain.com/*"
+zone_id = "your-zone-id"
 
-[env.development]
-# 开发环境变量
-vars = { JWT_SECRET = "dev-secret" }
+[env.staging]
+name = "navigation-site-staging"
+route = "staging.your-domain.com/*"
+zone_id = "your-zone-id"

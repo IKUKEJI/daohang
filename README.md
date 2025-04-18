@@ -1,134 +1,69 @@
-# 现代风格导航网站
+# 导航网站
 
-一个可以免费部署在 Cloudflare Pages 上的现代风格导航网站。
+一个基于 Cloudflare Workers 的导航网站，包含管理后台功能。
 
 ## 功能特点
 
-- 现代设计风格
-- 实时搜索功能
-- 响应式布局
-- 快速加载
-- 清晰的分类
-- 平滑的动画效果
-- 后台管理系统
-  - 用户认证
-  - 分类管理
-  - 网站管理
-  - 书签导入
-  - 账户设置
+- 分类管理：添加、编辑、删除分类
+- 网站管理：添加、编辑、删除网站
+- 书签导入：支持从浏览器导出文件导入书签
+- 用户认证：基于 JWT 的安全认证
+- 响应式设计：支持移动端访问
 
 ## 技术栈
 
-- HTML5
-- CSS3 (CSS 变量、Grid 布局)
-- JavaScript (原生 JS)
-- RemixIcon 图标库
 - Cloudflare Workers
-- Cloudflare KV 存储
+- TypeScript
+- Webpack
+- JWT 认证
+- KV 存储
 
-## 部署说明
+## 开发环境设置
 
-### 准备工作
-
-1. 创建 Cloudflare 账户
-2. 安装 Wrangler CLI: `npm install -g wrangler`
-3. 登录 Wrangler: `wrangler login`
-
-### 创建 KV 命名空间
-
+1. 安装依赖：
 ```bash
-# 创建生产环境 KV 命名空间
-wrangler kv:namespace create "NAVIGATION_KV"
-
-# 创建预览环境 KV 命名空间
-wrangler kv:namespace create "NAVIGATION_KV" --preview
+npm install
 ```
 
-### 配置项目
-
-1. 克隆项目到本地
-2. 修改 `wrangler.toml` 文件：
-   - 替换 `your-kv-namespace-id` 为实际的 KV 命名空间 ID
-   - 替换 `your-preview-kv-namespace-id` 为实际的预览 KV 命名空间 ID
-   - 设置 `JWT_SECRET` 环境变量
-
-### 部署步骤
-
-1. 将代码推送到 GitHub 仓库
-2. 登录 Cloudflare Dashboard
-3. 进入 Pages 页面
-4. 点击 "Create a project"
-5. 选择 "Connect to Git"
-6. 选择你的 GitHub 仓库
-7. 配置构建设置：
-   - 构建命令：`npm run build`
-   - 构建输出目录：`dist`
-8. 点击 "Save and Deploy"
-
-## 后台管理
-
-### 访问后台
-
-访问 `/admin` 路径进入后台管理界面。
-
-### 默认账户
-
-- 用户名：admin
-- 密码：admin
-
-### 功能说明
-
-1. 用户认证
-   - 登录/退出
-   - 修改账户信息
-
-2. 分类管理
-   - 添加分类
-   - 编辑分类
-   - 删除分类
-
-3. 网站管理
-   - 添加网站
-   - 编辑网站
-   - 删除网站
-
-4. 书签导入
-   - 支持导入浏览器书签
-   - 自动分类
-   - 错误处理
-
-## 自定义
-
-### 修改主题颜色
-
-在 `style.css` 文件中修改 CSS 变量：
-
-```css
-:root {
-    --primary-color: #你的颜色;
-    --secondary-color: #你的颜色;
-    --background-color: #你的颜色;
-    --text-color: #你的颜色;
-    --card-background: #你的颜色;
-    --hover-color: #你的颜色;
-}
+2. 启动开发服务器：
+```bash
+npm run dev
 ```
 
-### 添加新网站
+3. 构建项目：
+```bash
+npm run build
+```
 
-在 `index.html` 文件中添加新的网站卡片：
+4. 部署到 Cloudflare：
+```bash
+npm run deploy
+```
 
-```html
-<div class="site-card">
-    <div class="site-icon">
-        <i class="ri-你的图标"></i>
-    </div>
-    <h3>网站名称</h3>
-    <p>网站描述</p>
-    <a href="网站链接" target="_blank">访问网站</a>
-</div>
+## 环境变量
+
+在 `wrangler.toml` 中配置以下环境变量：
+
+- `JWT_SECRET`：JWT 签名密钥
+- `NAVIGATION_KV`：KV 存储命名空间
+
+## 目录结构
+
+```
+.
+├── functions/           # Cloudflare Workers 函数
+│   ├── api/            # API 处理器
+│   ├── index.ts        # 入口文件
+│   └── types.d.ts      # 类型定义
+├── public/             # 静态文件
+│   ├── admin/          # 管理后台
+│   └── index.html      # 首页
+├── package.json        # 项目配置
+├── tsconfig.json       # TypeScript 配置
+├── webpack.config.js   # Webpack 配置
+└── wrangler.toml       # Cloudflare Workers 配置
 ```
 
 ## 许可证
 
-MIT License 
+MIT 

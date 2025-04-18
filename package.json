@@ -1,16 +1,24 @@
 {
-  "name": "nav-site",
+  "name": "navigation-site",
   "version": "1.0.0",
-  "description": "一个现代风格的导航网站",
-  "main": "index.js",
+  "description": "一个简单的导航网站",
+  "main": "functions/index.ts",
   "scripts": {
-    "dev": "wrangler pages dev --kv KV",
-    "deploy": "wrangler pages publish ."
+    "dev": "wrangler dev",
+    "build": "webpack",
+    "deploy": "wrangler deploy",
+    "upload-static": "node scripts/upload-static.js"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20240208.0"
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
-    "wrangler": "^3.28.1"
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.0.0",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4",
+    "wrangler": "^3.0.0"
   }
-} 
+}
