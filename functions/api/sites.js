@@ -10,6 +10,22 @@ export async function onRequestGet(context) {
             return jsonResponse({ success: false, message: '未授权访问' }, 401);
         }
 
+        const url = new URL(context.request.url);
+        const id = url.pathname.split('/').pop();
+        
+        // 如果提供了ID，则获取单个网站
+        if (id && id !== 'sites') {
+            const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
+            const site = sites.find(s => s.id === id);
+
+            if (!site) {
+                return jsonResponse({ success: false, message: '网站不存在' }, 404);
+            }
+
+            return jsonResponse({ success: true, data: site });
+        }
+        
+        // 否则获取所有网站
         const sites = await context.env.KV.get(SITES_KEY) || '[]';
         return jsonResponse({ success: true, data: JSON.parse(sites) });
     } catch (error) {
@@ -117,28 +133,5 @@ export async function onRequestDelete(context) {
         return jsonResponse({ success: true });
     } catch (error) {
         return jsonResponse({ success: false, message: '删除网站失败' }, 500);
-    }
-}
-
-// 获取单个网站信息
-export async function onRequestGet(context) {
-    try {
-        if (!await authenticate(context.request)) {
-            return jsonResponse({ success: false, message: '未授权访问' }, 401);
-        }
-
-        const url = new URL(context.request.url);
-        const id = url.pathname.split('/').pop();
-
-        const sites = JSON.parse(await context.env.KV.get(SITES_KEY) || '[]');
-        const site = sites.find(s => s.id === id);
-
-        if (!site) {
-            return jsonResponse({ success: false, message: '网站不存在' }, 404);
-        }
-
-        return jsonResponse({ success: true, data: site });
-    } catch (error) {
-        return jsonResponse({ success: false, message: '获取网站信息失败' }, 500);
     }
 } 
