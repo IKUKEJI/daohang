@@ -1,16 +1,15 @@
 name = "navigation-site"
-main = "functions/index.ts"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
+main = "dist/worker.js"
+compatibility_date = "2024-01-01"
 
 [vars]
 ENVIRONMENT = "production"
-JWT_SECRET = "your-secret-key" # 在生产环境中应该使用更安全的密钥
+JWT_SECRET = "your-secret-key"
 
 [[kv_namespaces]]
 binding = "NAVIGATION_KV"
 id = "b097c512e3dc4870a1256e36d2d8d903"
-preview_id = "your-preview-kv-namespace-id"
+preview_id = "b097c512e3dc4870a1256e36d2d8d903"
 
 [site]
 bucket = "./public"
@@ -39,13 +38,21 @@ edge_ttl = 3600
 # 构建配置
 [build]
 command = "npm run build"
-watch_dir = "src"
+watch_dir = "functions"
+pages_build_output_dir = "dist"
 
 # 环境配置
 [env.production]
 name = "navigation-site-prod"
 route = "your-domain.com/*"
 zone_id = "your-zone-id"
+
+[env.production.vars]
+JWT_SECRET = "your-production-secret-key"
+
+[env.production.kv_namespaces]
+binding = "NAVIGATION_KV"
+id = "b097c512e3dc4870a1256e36d2d8d903"
 
 [env.staging]
 name = "navigation-site-staging"

@@ -5,7 +5,7 @@
   "main": "functions/index.ts",
   "scripts": {
     "dev": "wrangler dev",
-    "build": "webpack",
+    "build": "webpack --mode production",
     "deploy": "wrangler deploy",
     "upload-static": "node scripts/upload-static.js"
   },
@@ -44,6 +44,6 @@
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "workerd": "^1.20250418.0",
-    "wrangler": "^3.114.6"
+    "wrangler": "^4.12.0"
   }
 }

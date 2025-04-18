@@ -4,22 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>导航网站</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
-        <h1>我的导航</h1>
-        <nav id="category-nav"></nav>
+        <nav>
+            <div class="logo">导航网站</div>
+            <div class="nav-links">
+                <a href="/admin" class="admin-link">管理后台</a>
+            </div>
+        </nav>
     </header>
     
     <main>
-        <div id="sites-container"></div>
+        <div class="categories">
+            <!-- 分类将通过 JavaScript 动态加载 -->
+        </div>
+        
+        <div class="sites">
+            <!-- 网站列表将通过 JavaScript 动态加载 -->
+        </div>
     </main>
 
     <footer>
         <p>&copy; 2024 导航网站. All rights reserved.</p>
     </footer>
 
-    <script src="/script.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html> 
